@@ -74,6 +74,9 @@ class DailySyncService:
             # 2. Zkontrolovat a aktualizovat předvčerejšek (pokud se data změnila)
             logger.info(f"🔍 Kontroluji data za {day_before_yesterday} (mohla se změnit pozdější synchronizací)...")
             try:
+                # Krátká pauza před dalším dotazem (rate limiting)
+                time.sleep(5)
+                
                 # Stáhnout aktuální data za předvčerejšek
                 new_data = self.bot.get_garmin_data(day_before_yesterday)
                 
