@@ -60,16 +60,51 @@ class DailySyncService:
         logger.info("✅ Daily Sync Service inicializována")
     
     def sync_yesterday(self):
-        """Synchronizuje data pro včerejšek"""
+        """Synchronizuje data pro včerejšek a zkontroluje předvčerejšek"""
         yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        day_before_yesterday = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
+        
         logger.info(f"🔄 Začínám synchronizaci pro {yesterday}...")
         
         try:
+            # 1. Synchronizovat včerejšek (hlavní úkol)
             self.bot.run_once(yesterday)
+            logger.info(f"✅ Synchronizace úspěšná pro {yesterday}")
+            
+            # 2. Zkontrolovat a aktualizovat předvčerejšek (pokud se data změnila)
+            logger.info(f"🔍 Kontroluji data za {day_before_yesterday} (mohla se změnit pozdější synchronizací)...")
+            try:
+                # Stáhnout aktuální data za předvčerejšek
+                new_data = self.bot.get_garmin_data(day_before_yesterday)
+                
+                # Zkontrolovat, zda existují data v Google Sheets
+                try:
+                    worksheet = self.bot.sheet.worksheet('Garmin Data')
+                    existing_dates = worksheet.col_values(1)
+                    
+                    if day_before_yesterday in existing_dates:
+                        # Data existují - zkontrolovat, zda se změnila
+                        # send_to_sheets automaticky aktualizuje existující řádek
+                        logger.info(f"📊 Data pro {day_before_yesterday} existují - aktualizuji pokud se změnila...")
+                        self.bot.send_to_sheets(new_data)
+                        logger.info(f"✅ Kontrola a aktualizace dokončena pro {day_before_yesterday}")
+                    else:
+                        logger.info(f"ℹ️  Data pro {day_before_yesterday} neexistují - přidávám...")
+                        self.bot.send_to_sheets(new_data)
+                        logger.info(f"✅ Data přidána pro {day_before_yesterday}")
+                except Exception as e:
+                    logger.warning(f"⚠️  Nepodařilo se zkontrolovat existující data: {e}")
+                    # Přesto zkusit odeslat (send_to_sheets to zvládne)
+                    self.bot.send_to_sheets(new_data)
+                    
+            except Exception as e:
+                logger.warning(f"⚠️  Chyba při kontrole předvčerejška {day_before_yesterday}: {e}")
+                # Neukončit celou synchronizaci kvůli této chybě
+                logger.info("💡 Pokračuji - hlavní synchronizace pro včerejšek byla úspěšná")
+            
             self.stats['successful'] += 1
             self.stats['last_success'] = datetime.now()
             self.stats['consecutive_failures'] = 0
-            logger.info(f"✅ Synchronizace úspěšná pro {yesterday}")
             return True
             
         except Exception as e:
