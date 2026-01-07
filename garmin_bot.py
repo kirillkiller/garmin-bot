@@ -1612,17 +1612,36 @@ class GarminBot:
             
             # Kontrola duplicit - zkontrolovat, zda už tento den není záznam
             existing_dates = worksheet.col_values(1)
-            if data.get('date') in existing_dates:
-                # Najít řádek a aktualizovat
-                row_index = existing_dates.index(data.get('date')) + 1
+            target_date = data.get('date')
+            
+            if target_date in existing_dates:
+                # Najít všechny výskyty tohoto data (pro případ duplicit)
+                all_indices = [i + 1 for i, d in enumerate(existing_dates) if d == target_date]
+                
+                if len(all_indices) > 1:
+                    # Duplicitní datumy nalezeny - upozornit a smazat všechny kromě posledního
+                    logger.warning(f"⚠️  Duplicitní datumy nalezeny pro {target_date} na řádcích: {all_indices}")
+                    logger.info(f"🗑️  Mažu duplicitní řádky (ponechávám poslední: řádek {all_indices[-1]})...")
+                    
+                    # Smazat všechny řádky kromě posledního (od konce, aby se indexy neposunuly)
+                    for idx in reversed(all_indices[:-1]):
+                        worksheet.delete_rows(idx)
+                        logger.info(f"   ✅ Smazán duplicitní řádek {idx}")
+                    
+                    # Aktualizovat poslední řádek
+                    row_index = all_indices[-1]
+                else:
+                    # Normální případ - jen jeden výskyt
+                    row_index = all_indices[0]
+                
                 # Aktualizovat všechny sloupce (A až poslední)
                 last_col = num_to_col(len(row))
                 worksheet.update(range_name=f'A{row_index}:{last_col}{row_index}', values=[row])
-                logger.info(f"✅ Data aktualizována pro {data.get('date')} (řádek {row_index})")
+                logger.info(f"✅ Data aktualizována pro {target_date} (řádek {row_index})")
             else:
                 # Přidat nový řádek
                 worksheet.append_row(row)
-                logger.info(f"✅ Data přidána pro {data.get('date')}")
+                logger.info(f"✅ Data přidána pro {target_date}")
             
         except Exception as e:
             logger.error(f"❌ Chyba při odesílání do Google Sheets: {e}")
