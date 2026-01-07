@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Data
+data/
+*.db
+*.sqlite
+
+# Logs
+logs/
+*.log
+
+# Konfigurace s citlivými daty
+config/config.yaml
+.env
+
+# YouTube cookies (citlivé!)
+cookies.txt
+youtube_cookies.txt
+*.cookies.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ChromeDriver
+chromedriver
+chromedriver.exe
+
+credentials.json
+.env
+*.log
+logs/

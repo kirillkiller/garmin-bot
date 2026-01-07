@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Monitoring - Správa</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌐 Web Monitoring - Správa</h1>
+            <div class="status-bar">
+                <span id="status">Načítání...</span>
+                <button id="runMonitoring" class="btn btn-primary">▶️ Spustit Monitoring</button>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="websites">📋 Weby</button>
+            <button class="tab-btn" data-tab="youtube">📺 YouTube</button>
+            <button class="tab-btn" data-tab="prompt">🤖 AI Prompt</button>
+            <button class="tab-btn" data-tab="reports">📊 Reporty</button>
+            <button class="tab-btn" data-tab="reports-list">📋 Seznam Reportů</button>
+            <button class="tab-btn" data-tab="emails">📧 Email Reporty</button>
+            <button class="tab-btn" data-tab="stats">📈 Statistiky</button>
+        </div>
+
+        <!-- Tab: Weby -->
+        <div id="websites" class="tab-content active">
+            <div class="section">
+                <h2>Monitorované weby</h2>
+                <button id="addWebsiteBtn" class="btn btn-success">+ Přidat web</button>
+                <div id="websitesList" class="list"></div>
+            </div>
+        </div>
+
+        <!-- Tab: YouTube -->
+        <div id="youtube" class="tab-content">
+            <div class="section">
+                <h2>📺 YouTube Videa a Transkripty</h2>
+                <div class="youtube-controls">
+                    <select id="youtubeChannelSelect">
+                        <option value="">Všechny kanály</option>
+                    </select>
+                    <select id="youtubeFilterSelect">
+                        <option value="all">Všechna videa</option>
+                        <option value="with_transcript">S transkriptem</option>
+                        <option value="without_transcript">Bez transkriptu</option>
+                    </select>
+                    <button id="refreshYoutubeBtn" class="btn btn-primary">🔄 Obnovit</button>
+                </div>
+                <div id="youtubeStats" class="youtube-stats"></div>
+                <div id="youtubeVideosList" class="youtube-videos-list"></div>
+            </div>
+        </div>
+
+        <!-- Modal pro zobrazení transkriptu -->
+        <div id="transcriptModal" class="modal">
+            <div class="modal-content modal-large">
+                <span class="close">&times;</span>
+                <h2 id="transcriptTitle"></h2>
+                <div class="transcript-info">
+                    <span id="transcriptLanguage"></span>
+                    <span id="transcriptDate"></span>
+                    <a id="transcriptVideoUrl" href="#" target="_blank">🔗 Otevřít video</a>
+                </div>
+                <div id="transcriptContent" class="transcript-content"></div>
+                <button id="copyTranscriptBtn" class="btn btn-primary">📋 Kopírovat transkript</button>
+            </div>
+        </div>
+
+        <!-- Tab: AI Prompt -->
+        <div id="prompt" class="tab-content">
+            <div class="section">
+                <h2>Fine-tuning AI Promptu</h2>
+                <p>Uprav prompt pro analýzu obsahu pomocí Gemini AI</p>
+                <textarea id="promptText" rows="20" placeholder="Zadej prompt..."></textarea>
+                <button id="savePromptBtn" class="btn btn-primary">💾 Uložit Prompt</button>
+            </div>
+        </div>
+
+        <!-- Tab: Reporty -->
+        <div id="reports" class="tab-content">
+            <div class="section">
+                <h2>Vygenerovat nový report</h2>
+                <div class="report-controls">
+                    <select id="monthSelect">
+                        <option value="">Poslední měsíc</option>
+                    </select>
+                    <button id="generateReportBtn" class="btn btn-primary">📄 Vygenerovat Report</button>
+                </div>
+                <div id="reportContent" class="report-content"></div>
+            </div>
+        </div>
+
+        <!-- Tab: Seznam Reportů -->
+        <div id="reports-list" class="tab-content">
+            <div class="section">
+                <h2>Seznam vygenerovaných reportů</h2>
+                <div id="reportsList" class="reports-list"></div>
+            </div>
+        </div>
+
+        <!-- Tab: Email Reporty -->
+        <div id="emails" class="tab-content">
+            <div class="section">
+                <h2>Správa email reportů</h2>
+                <button id="addEmailBtn" class="btn btn-success">+ Přidat email</button>
+                <div id="emailsList" class="list"></div>
+            </div>
+        </div>
+
+        <!-- Tab: Statistiky -->
+        <div id="stats" class="tab-content">
+            <div class="section">
+                <h2>Statistiky</h2>
+                <div id="statsContent" class="stats-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pro přidání emailu -->
+    <div id="addEmailModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Přidat email pro periodické reporty</h2>
+            <form id="addEmailForm">
+                <label>Email:</label>
+                <input type="email" id="emailAddress" required placeholder="email@example.com">
+                
+                <label>Začátek (YYYY-MM-DD):</label>
+                <input type="date" id="emailStartDate" required>
+                
+                <label>Perioda (dny):</label>
+                <input type="number" id="emailPeriod" value="30" min="1">
+                
+                <button type="submit" class="btn btn-primary">Přidat</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal pro přidání webu -->
+    <div id="addWebsiteModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Přidat nový web</h2>
+            <form id="addWebsiteForm">
+                <label>URL:</label>
+                <input type="url" id="websiteUrl" required placeholder="https://example.com">
+                
+                <label>Název:</label>
+                <input type="text" id="websiteName" placeholder="Název webu">
+                
+                <label>Scroll Depth:</label>
+                <input type="number" id="scrollDepth" value="5" min="0">
+                
+                <label>Wait Time (sekundy):</label>
+                <input type="number" id="waitTime" value="2" min="1" step="0.5">
+                
+                <label>AI Prompt pro tento web (volitelné):</label>
+                <textarea id="websitePrompt" rows="5" placeholder="Např.: Soustřeď se na daňové změny, nové zákony, důležité právní závěry..."></textarea>
+                <small style="color: #666;">Tento prompt pomůže AI lépe analyzovat obsah z tohoto webu</small>
+                
+                <button type="submit" class="btn btn-primary">Přidat</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
+

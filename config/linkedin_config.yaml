@@ -1,0 +1,46 @@
+# LinkedIn Monitoring Configuration
+
+# Seznam profilů k monitorování
+# Můžeš použít buď:
+# - Plnou URL: https://www.linkedin.com/in/username
+# - Pouze username: username
+monitored_profiles:
+  - "https://www.linkedin.com/in/example-profile-1"
+  # - "https://www.linkedin.com/in/example-profile-2"
+  # - "username-3"
+
+# Nastavení monitoringu
+monitoring:
+  # Interval mezi kontrolami (v sekundách)
+  # 3600 = 1 hodina, 1800 = 30 minut, 7200 = 2 hodiny
+  check_interval: 3600
+  
+  # Zpoždění mezi kontrolami jednotlivých profilů (sekundy)
+  delay_between_profiles: 5
+  
+  # Kolik dní zpět sledovat aktivitu
+  days_back: 7
+  
+  # Maximální počet postů na profil
+  max_posts_per_profile: 20
+
+# Nastavení scraperu
+scraper:
+  # Spustit prohlížeč v headless módu (bez GUI)
+  # False = viditelný prohlížeč (lepší pro debugging)
+  # True = skrytý prohlížeč (lepší pro produkci)
+  headless: false
+  
+  # Zpoždění mezi akcemi v prohlížeči (milisekundy)
+  # Vyšší hodnota = pomalejší, ale přirozenější chování
+  slow_mo: 100
+  
+  # Timeout pro operace (milisekundy)
+  timeout: 30000
+
+# Notifikace (volitelné - zatím není implementováno)
+notifications:
+  enabled: false
+  # email: true
+  # webhook: false
+

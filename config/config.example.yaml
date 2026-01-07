@@ -1,0 +1,92 @@
+# Příklad konfigurace - zkopíruj do config.yaml a uprav
+
+# AI Nastavení (Gemini) - Všechna AI práce se dělá pomocí Google Gemini
+ai:
+  provider: "gemini"  # Používá pouze Google Gemini API
+  model: "gemini-pro"  # gemini-pro, gemini-1.5-pro, gemini-pro-vision
+  api_key: "${GEMINI_API_KEY}"  # Získej z https://makersuite.google.com/app/apikey
+  temperature: 0.7  # Kreativita (0-1), nižší = konzistentnější
+  max_tokens: 2000
+  # Pokročilé AI funkce
+  use_intelligent_filtering: true  # Před-analýza filtrování pomocí Gemini
+  enhance_summaries: true  # Vylepšování shrnutí pomocí Gemini
+  extract_entities: false  # Extrakce entit (lidé, společnosti, témata, místa)
+
+# Monitorované weby
+websites:
+  - url: "https://techcrunch.com"
+    name: "TechCrunch"
+    scroll_depth: 3
+    wait_time: 2
+    selectors:
+      title: "h1, h2.post-title"
+      content: "article, .article-content, p"
+      links: "a[href]"
+  
+  - url: "https://www.theverge.com"
+    name: "The Verge"
+    scroll_depth: 5
+    wait_time: 1.5
+    selectors:
+      title: "h1, h2.c-entry-box--compact__title"
+      content: ".c-entry-content, article p"
+      links: "a[href]"
+
+# Zajímavé kategorie (co nás zajímá)
+interesting_categories:
+  - "technologie"
+  - "AI a machine learning"
+  - "startupy"
+  - "investice"
+  - "inovace"
+  - "kybernetická bezpečnost"
+  - "quantum computing"
+  - "blockchain"
+
+# Relevance threshold (0-1)
+# Obsah s relevance_score >= threshold bude považován za relevantní
+relevance_threshold: 0.7
+
+# Email nastavení
+email:
+  enabled: true
+  smtp_server: "smtp.gmail.com"
+  smtp_port: 587
+  use_tls: true
+  username: "${EMAIL_USERNAME}"  # Tvá Gmail adresa
+  password: "${EMAIL_PASSWORD}"  # Gmail App Password (ne běžné heslo!)
+  from_address: "${EMAIL_FROM}"  # Email odesílatele
+  to_addresses:
+    - "${EMAIL_TO}"  # Email příjemce
+  subject_template: "🔔 Nový relevantní obsah nalezen - {category}"
+  send_daily_summary: true
+  daily_summary_time: "18:00"  # HH:MM
+
+# Databáze
+database:
+  type: "sqlite"
+  path: "data/monitoring.db"
+
+# Scraping nastavení
+scraping:
+  user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+  timeout: 30  # sekundy
+  retry_attempts: 3
+  retry_delay: 5  # sekundy
+  respect_robots_txt: true
+  delay_between_requests: 2  # sekundy mezi požadavky
+
+# Scheduler
+scheduler:
+  enabled: true
+  check_interval: 3600  # sekundy (1 hodina = 3600s)
+  # Alternativně cron expression:
+  # schedule: "0 */6 * * *"  # každých 6 hodin
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "logs/monitoring.log"
+  max_size_mb: 10
+  backup_count: 5
+

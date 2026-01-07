@@ -1,0 +1,25 @@
+🍪 KAM ULOŽIT COOKIES.TXT
+
+Přesná cesta:
+/Users/kirilljuran/Downloads/test cursor/cookies.txt
+
+Nebo relativně z kořenové složky projektu:
+./cookies.txt
+
+Struktura složky:
+test cursor/
+├── cookies.txt          ← SEM ULOŽ cookies.txt!
+├── youtube_bot.py
+├── youtube_scheduler.py
+└── ...
+
+Jak to udělat:
+
+1. Exportuj cookies z prohlížeče (extension nebo yt-dlp)
+2. Ulož soubor jako "cookies.txt" (bez uvozovek)
+3. Ulož ho do složky: /Users/kirilljuran/Downloads/test cursor/
+4. Hotovo!
+
+Ověření:
+python3 -c "from pathlib import Path; print('✅ Existuje!' if Path('cookies.txt').exists() else '❌ Nenalezeno')"
+

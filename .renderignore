@@ -1,0 +1,13 @@
+logs/
+*.log
+.env
+__pycache__/
+*.pyc
+.DS_Store
+*.md
+!README.md
+test_*.py
+find_missing_dates.py
+fetch_historical_data.py
+zkontroluj_sheet.py
+
