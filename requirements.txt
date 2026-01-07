@@ -5,3 +5,5 @@ google-auth-oauthlib>=1.0.0
 google-auth-httplib2>=0.1.0
 garth>=0.4.0
 requests>=2.28.0
+flask>=2.0.0
+python-telegram-bot>=20.0

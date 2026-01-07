@@ -21,10 +21,12 @@ except ImportError:
 # Telegram notifikace
 try:
     from telegram_notifier import TelegramNotifier
+    from telegram_mfa_handler import TelegramMFAHandler
     TELEGRAM_AVAILABLE = True
 except ImportError:
     TELEGRAM_AVAILABLE = False
     TelegramNotifier = None
+    TelegramMFAHandler = None
 
 # Nastavení logování
 logging.basicConfig(
@@ -75,11 +77,19 @@ class GarminBot:
         
         # Telegram notifikace
         self.telegram = None
+        self.telegram_mfa = None
         if TELEGRAM_AVAILABLE and TelegramNotifier:
             try:
                 self.telegram = TelegramNotifier()
             except Exception as e:
                 logger.warning(f"⚠️  Nepodařilo se inicializovat Telegram notifikace: {e}")
+        
+        # Telegram MFA handler (pro interaktivní zadání MFA kódu)
+        if TELEGRAM_AVAILABLE and TelegramMFAHandler:
+            try:
+                self.telegram_mfa = TelegramMFAHandler()
+            except Exception as e:
+                logger.warning(f"⚠️  Nepodařilo se inicializovat Telegram MFA handler: {e}")
         
         # Načtení Google credentials
         self._init_google_sheets(google_credentials_path)
@@ -236,6 +246,19 @@ class GarminBot:
                             elif mfa_from_env:
                                 logger.info(f"✅ Používám MFA kód z environment variable")
                                 return mfa_from_env
+                            
+                            # Zkusit získat MFA kód přes Telegram (pokud je dostupný)
+                            if self.telegram_mfa and self.telegram_mfa.enabled:
+                                logger.info("📱 Žádám MFA kód přes Telegram...")
+                                telegram_code = self.telegram_mfa.request_mfa_code()
+                                if telegram_code:
+                                    logger.info(f"✅ MFA kód přijat z Telegramu: {'*' * len(telegram_code)}")
+                                    if self.telegram_mfa:
+                                        self.telegram_mfa.send_mfa_received_confirmation()
+                                    return telegram_code
+                                else:
+                                    logger.warning("⚠️  MFA kód nebyl zadán přes Telegram včas")
+                            
                             # Jinak se zeptat uživatele interaktivně (pouze pokud je TTY)
                             if sys.stdin.isatty():
                                 logger.info("")
@@ -249,19 +272,20 @@ class GarminBot:
                                 logger.info(f"✅ MFA kód přijat: {'*' * len(code)}")
                                 return code
                             else:
-                                # Není TTY (Render, cron, atd.) - vyhodit chybu
-                                error_msg = "MFA kód je potřeba, ale není dostupný interaktivní vstup. Nastav GARMIN_MFA_CODE environment variable."
+                                # Není TTY a Telegram MFA nefunguje - vyhodit chybu
+                                error_msg = "MFA kód je potřeba, ale není dostupný interaktivní vstup ani Telegram MFA handler."
                                 logger.error(f"❌ {error_msg}")
                                 if self.telegram:
                                     self.telegram.send_message(
                                         f"🔐 <b>MFA kód vyžadován</b>\n\n"
-                                        f"Bot potřebuje MFA kód, ale běží na Render (bez interaktivního vstupu).\n\n"
+                                        f"Bot potřebuje MFA kód, ale nemůže ho získat automaticky.\n\n"
                                         f"💡 <b>Řešení:</b>\n"
                                         f"1. Zkontroluj SMS/e-mail pro MFA kód\n"
-                                        f"2. Přidej do Render environment variables:\n"
+                                        f"2. Odpověz na tuto zprávu s MFA kódem\n"
+                                        f"3. Nebo přidej do Render environment variables:\n"
                                         f"   <code>GARMIN_MFA_CODE=tvuj-kod</code>\n"
-                                        f"3. Bot se znovu spustí a použije kód\n"
-                                        f"4. Session se uloží a příště už nebude potřeba"
+                                        f"4. Bot se znovu spustí a použije kód\n"
+                                        f"5. Session se uloží a příště už nebude potřeba"
                                     )
                                 raise Exception(error_msg)
                     # Pro ostatní input() volání použít originální funkci
