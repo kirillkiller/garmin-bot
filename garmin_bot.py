@@ -367,7 +367,7 @@ class GarminBot:
     
     def get_garmin_data(self, date: str) -> Dict[str, Any]:
         """
-        Získá data z Garmin Connect pro dané datum
+        Získá data z Garmin Connect pro dané datum s retry logikou
         
         Args:
             date: Datum ve formátu YYYY-MM-DD
@@ -378,26 +378,60 @@ class GarminBot:
         if not self.garmin_client:
             self._init_garmin()
         
-        max_retries = 3
-        retry_delay = 5  # sekund
+        max_retries = 5  # Zvýšeno z 3 na 5
+        base_retry_delay = 10  # Základní delay 10 sekund
         
         for attempt in range(max_retries):
             try:
                 return self._fetch_garmin_data(date)
             except Exception as e:
                 error_str = str(e)
-                if "429" in error_str or "Too Many Requests" in error_str:
+                error_type = type(e).__name__
+                
+                # Detekce síťových chyb
+                is_network_error = (
+                    "Connection reset" in error_str or
+                    "Connection aborted" in error_str or
+                    "ConnectionResetError" in error_str or
+                    "ConnectionError" in error_str or
+                    "Timeout" in error_str or
+                    "timeout" in error_str.lower() or
+                    "ECONNRESET" in error_str or
+                    "Broken pipe" in error_str
+                )
+                
+                # Detekce rate limiting
+                is_rate_limit = (
+                    "429" in error_str or
+                    "Too Many Requests" in error_str or
+                    "rate limit" in error_str.lower()
+                )
+                
+                # Pokud je to síťová chyba nebo rate limit, zkusit znovu
+                if (is_network_error or is_rate_limit) and attempt < max_retries - 1:
+                    # Exponenciální backoff: 10s, 20s, 40s, 80s, 160s
+                    wait_time = base_retry_delay * (2 ** attempt)
+                    
+                    if is_network_error:
+                        logger.warning(f"⚠️  Síťová chyba pro {date} (pokus {attempt + 1}/{max_retries}): {error_str}")
+                        logger.info(f"⏳ Čekám {wait_time} sekund před dalším pokusem...")
+                    else:
+                        logger.warning(f"⚠️  Rate limit (429) pro {date} (pokus {attempt + 1}/{max_retries})")
+                        logger.info(f"⏳ Čekám {wait_time} sekund před dalším pokusem...")
+                    
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    # Jiná chyba nebo dosažen max počet pokusů
+                    logger.error(f"❌ Chyba při získávání dat z Garmin pro {date} (pokus {attempt + 1}/{max_retries}): {e}")
                     if attempt < max_retries - 1:
-                        wait_time = retry_delay * (attempt + 1)
-                        logger.warning(f"⚠️  Rate limit (429) pro {date} - čekám {wait_time} sekund...")
+                        # Ještě jeden pokus s kratší pauzou
+                        wait_time = base_retry_delay
+                        logger.info(f"⏳ Čekám {wait_time} sekund před dalším pokusem...")
                         time.sleep(wait_time)
                         continue
                     else:
-                        logger.error(f"❌ Chyba při získávání dat z Garmin pro {date}: {e}")
                         raise
-                else:
-                    logger.error(f"❌ Chyba při získávání dat z Garmin pro {date}: {e}")
-                    raise
         
         # Tohle by se nemělo nikdy stát, ale pro jistotu
         raise Exception("Nepodařilo se získat data po několika pokusech")
