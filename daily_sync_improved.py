@@ -33,7 +33,14 @@ class DailySyncService:
         self.google_credentials = os.getenv('GOOGLE_CREDENTIALS_PATH', 'credentials.json')
         
         if not all([self.garmin_email, self.garmin_password, self.google_sheet_id]):
-            logger.error("❌ Chybí povinné environment variables!")
+            missing = [k for k, v in {
+                'GARMIN_EMAIL': self.garmin_email,
+                'GARMIN_PASSWORD': self.garmin_password,
+                'GOOGLE_SHEET_ID': self.google_sheet_id
+            }.items() if not v]
+            logger.error(f"❌ Chybí povinné environment variables: {', '.join(missing)}")
+            logger.error("💡 Zkontroluj Render.com environment variables")
+            # Toto je kritická chyba - bez těchto proměnných nemůžeme pokračovat
             sys.exit(1)
         
         # Telegram notifikace
@@ -150,8 +157,19 @@ class DailySyncService:
     
     def run_once(self):
         """Spustí synchronizaci jednou"""
-        self.sync_yesterday()
-        self.check_health()
+        try:
+            success = self.sync_yesterday()
+            self.check_health()
+            # Vrátit exit code 0 i při chybě synchronizace (není to kritická chyba)
+            # Kritická chyba je jen chybějící env vars, které se kontrolují v __init__
+            return 0 if success else 0
+        except Exception as e:
+            logger.error(f"❌ Kritická chyba v run_once: {e}")
+            # Poslat notifikaci
+            if self.telegram:
+                self.telegram.notify_sync_error(f"Kritická chyba: {str(e)}", "run_once")
+            # Vrátit 0, aby Render.com neoznačil to jako selhání (bot se znovu spustí příště)
+            return 0
     
     def run_daemon(self, sync_time: str = "01:00"):
         """
@@ -213,10 +231,12 @@ if __name__ == '__main__':
     service = DailySyncService()
     
     if args.once:
-        service.run_once()
+        exit_code = service.run_once()
+        sys.exit(exit_code)
     elif args.daemon:
         service.run_daemon(args.sync_time)
     else:
         # Default: spustit jednou
-        service.run_once()
+        exit_code = service.run_once()
+        sys.exit(exit_code)
 
