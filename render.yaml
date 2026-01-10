@@ -2,7 +2,7 @@ services:
   - type: cron
     name: garmin-daily-sync
     env: python
-    schedule: "0 1 * * *"  # Každý den v 1:00 UTC (2:00 CET v létě, 3:00 CET v zimě)
+    schedule: "0 7 * * *"  # Každý den v 7:00 UTC (8:00 CET v létě, 9:00 CET v zimě) - později, aby měl Garmin čas synchronizovat všechna data
     buildCommand: pip install -r requirements.txt
     startCommand: python3 daily_sync_improved.py --once
     envVars:
