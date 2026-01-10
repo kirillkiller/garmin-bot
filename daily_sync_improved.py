@@ -75,6 +75,7 @@ class DailySyncService:
         
         try:
             # 1. Synchronizovat včerejšek (hlavní úkol)
+            # send_to_sheets automaticky aktualizuje existující řádek, takže můžeme bezpečně volat znovu
             self.bot.run_once(yesterday)
             logger.info(f"✅ Synchronizace úspěšná pro {yesterday}")
             
@@ -110,6 +111,26 @@ class DailySyncService:
             except Exception as e:
                 logger.warning(f"⚠️  Chyba při kontrole předvčerejška {day_before_yesterday}: {e}")
                 # Neukončit celou synchronizaci kvůli této chybě
+                logger.info("💡 Pokračuji - hlavní synchronizace pro včerejšek byla úspěšná")
+            
+            # 3. Zkontrolovat a aktualizovat včerejšek znovu (pro případ, že se data změnila během dne)
+            # Toto je důležité - data za včerejšek mohou být ještě nekompletní ráno
+            # Odpolední kontrola je pak zaktualizuje
+            logger.info(f"🔍 Re-kontroluji data za {yesterday} (mohla se změnit během dne)...")
+            try:
+                # Krátká pauza před dalším dotazem (rate limiting)
+                time.sleep(5)
+                
+                # Stáhnout aktuální data za včerejšek znovu
+                updated_data = self.bot.get_garmin_data(yesterday)
+                
+                # send_to_sheets automaticky aktualizuje existující řádek
+                self.bot.send_to_sheets(updated_data)
+                logger.info(f"✅ Re-kontrola a aktualizace dokončena pro {yesterday}")
+                    
+            except Exception as e:
+                logger.warning(f"⚠️  Chyba při re-kontrole včerejška {yesterday}: {e}")
+                # Neukončit celou synchronizaci kvůli této chybě - hlavní synchronizace už proběhla
                 logger.info("💡 Pokračuji - hlavní synchronizace pro včerejšek byla úspěšná")
             
             self.stats['successful'] += 1

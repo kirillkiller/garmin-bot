@@ -1,8 +1,29 @@
 services:
   - type: cron
-    name: garmin-daily-sync
+    name: garmin-daily-sync-morning
     env: python
-    schedule: "0 7 * * *"  # Každý den v 7:00 UTC (8:00 CET v létě, 9:00 CET v zimě) - později, aby měl Garmin čas synchronizovat všechna data
+    schedule: "0 7 * * *"  # Každý den v 7:00 UTC (8:00 CET v létě, 9:00 CET v zimě) - hlavní synchronizace
+    buildCommand: pip install -r requirements.txt
+    startCommand: python3 daily_sync_improved.py --once
+    envVars:
+      - key: GARMIN_EMAIL
+        sync: false
+      - key: GARMIN_PASSWORD
+        sync: false
+      - key: GOOGLE_SHEET_ID
+        sync: false
+      - key: GOOGLE_CREDENTIALS_PATH
+        value: credentials.json
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: TELEGRAM_NOTIFY_SUCCESS
+        value: "false"
+  - type: cron
+    name: garmin-daily-sync-afternoon
+    env: python
+    schedule: "0 15 * * *"  # Každý den v 15:00 UTC (16:00 CET v létě, 17:00 CET v zimě) - odpolední aktualizace pro případ, že se data změnila
     buildCommand: pip install -r requirements.txt
     startCommand: python3 daily_sync_improved.py --once
     envVars:
