@@ -12,13 +12,24 @@ from garmin_bot import GarminBot
 from telegram_notifier import TelegramNotifier
 
 # Nastavení logování
+import pathlib
+
+# Vytvořit adresář logs/ pokud neexistuje (pro lokální použití)
+log_dir = pathlib.Path('logs')
+log_dir.mkdir(exist_ok=True)
+
+# Handlers - file handler pouze pokud adresář existuje a je zapisovatelný
+handlers = [logging.StreamHandler()]
+try:
+    handlers.append(logging.FileHandler('logs/daily_sync.log'))
+except (OSError, PermissionError):
+    # Pokud nelze vytvořit log soubor (např. na Render.com), použijeme jen console
+    pass
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('logs/daily_sync.log'),
-        logging.StreamHandler()
-    ]
+    handlers=handlers
 )
 logger = logging.getLogger(__name__)
 
