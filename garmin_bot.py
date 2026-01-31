@@ -108,29 +108,32 @@ class GarminBot:
     def _init_google_sheets(self, credentials_path: Optional[str] = None):
         """Inicializuje připojení k Google Sheets"""
         try:
-            # Zkusit Service Account nejdřív
-            if credentials_path and os.path.exists(credentials_path):
-                scope = [
-                    'https://www.googleapis.com/auth/spreadsheets',
-                    'https://www.googleapis.com/auth/drive'
-                ]
-                creds = Credentials.from_service_account_file(
-                    credentials_path,
-                    scopes=scope
-                )
+            scope = [
+                'https://www.googleapis.com/auth/spreadsheets',
+                'https://www.googleapis.com/auth/drive'
+            ]
+            
+            # 1. Zkusit GOOGLE_CREDENTIALS_JSON environment variable (pro Render.com a podobné služby)
+            google_creds_json = os.getenv('GOOGLE_CREDENTIALS_JSON')
+            if google_creds_json:
+                try:
+                    creds_info = json.loads(google_creds_json)
+                    creds = Credentials.from_service_account_info(creds_info, scopes=scope)
+                    self.sheets_client = gspread.authorize(creds)
+                    logger.info("✅ Google Sheets připojeno pomocí GOOGLE_CREDENTIALS_JSON env var")
+                except json.JSONDecodeError as e:
+                    logger.error(f"❌ GOOGLE_CREDENTIALS_JSON není validní JSON: {e}")
+                    raise
+            # 2. Zkusit cestu k souboru
+            elif credentials_path and os.path.exists(credentials_path):
+                creds = Credentials.from_service_account_file(credentials_path, scopes=scope)
                 self.sheets_client = gspread.authorize(creds)
-                logger.info("✅ Google Sheets připojeno pomocí Service Account")
+                logger.info(f"✅ Google Sheets připojeno pomocí Service Account ({credentials_path})")
+            # 3. Zkusit credentials.json v aktuálním adresáři
             elif os.path.exists('credentials.json'):
                 # Zkusit credentials.json jako Service Account
                 try:
-                    scope = [
-                        'https://www.googleapis.com/auth/spreadsheets',
-                        'https://www.googleapis.com/auth/drive'
-                    ]
-                    creds = Credentials.from_service_account_file(
-                        'credentials.json',
-                        scopes=scope
-                    )
+                    creds = Credentials.from_service_account_file('credentials.json', scopes=scope)
                     self.sheets_client = gspread.authorize(creds)
                     logger.info("✅ Google Sheets připojeno pomocí Service Account (credentials.json)")
                 except Exception:
@@ -148,8 +151,8 @@ class GarminBot:
                         )
             else:
                 raise FileNotFoundError(
-                    "Google credentials nenalezeny. "
-                    "Potřebujete buď Service Account JSON (credentials.json) nebo OAuth2 token.json"
+                    "Google credentials nenalezeny. Nastavte GOOGLE_CREDENTIALS_JSON env var, "
+                    "nebo poskytněte credentials.json soubor"
                 )
             
             # Otevření sheetu
